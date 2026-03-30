@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Active Fitnez</title>
+<style>
+body {font-family: Arial; background:#111; color:#fff; text-align:center;}
+.container {width:90%; margin:auto;}
+input, select, button {padding:10px; margin:5px;}
+table {width:100%; margin-top:20px; border-collapse: collapse;}
+th, td {border:1px solid #555; padding:10px;}
+th {background:#222;}
+button {cursor:pointer;}
+.stats {display:flex; justify-content:space-around; margin-top:20px;}
+.card {background:#222; padding:15px; border-radius:10px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<img src="logo.png" width="150" style="border-radius:50%;">
+<h1>🏋️ Active Fitnez</h1>
+
+<div class="stats">
+<div class="card">Total Members: <span id="total"></span></div>
+<div class="card">Active Members: <span id="active"></span></div>
+<div class="card">Fees Due: <span id="dueCount"></span></div>
+</div>
+
+<h2>Training Programs & Fees</h2>
+<ul>
+<li>Weight Training – ₹1000/month</li>
+<li>Cardio – ₹800/month</li>
+<li>Yoga – ₹700/month</li>
+<li>Personal Training – ₹2000/month</li>
+</ul>
+
+<h2>Add / Update Member</h2>
+<input id="name" placeholder="Name">
+<input id="phone" placeholder="Phone">
+<select id="training">
+<option>Weight Training</option>
+<option>Cardio</option>
+<option>Yoga</option>
+<option>Personal Training</option>
+</select>
+<input type="date" id="date">
+<button onclick="addMember()">Save</button>
+
+<h2>Search</h2>
+<input id="search" placeholder="Search by name" onkeyup="render()">
+
+<h2>Members</h2>
+<table id="table"></table>
+
+<h2>Fees Due</h2>
+<table id="dueTable"></table>
+
+</div>
+
+<script>
+let members = JSON.parse(localStorage.getItem('members')) || [];
+let editIndex = -1;
+
+function addMember(){
+let name=document.getElementById('name').value;
+let phone=document.getElementById('phone').value;
+let training=document.getElementById('training').value;
+let date=document.getElementById('date').value;
+
+if(!name||!phone||!date){alert('Fill all'); return;}
+
+if(editIndex>-1){
+members[editIndex]={name,phone,training,date};
+editIndex=-1;
+}else{
+members.push({name,phone,training,date});
+}
+
+localStorage.setItem('members', JSON.stringify(members));
+clearForm();
+render();
+}
+
+function deleteMember(i){
+members.splice(i,1);
+localStorage.setItem('members', JSON.stringify(members));
+render();
+}
+
+function editMember(i){
+let m=members[i];
+document.getElementById('name').value=m.name;
+document.getElementById('phone').value=m.phone;
+document.getElementById('training').value=m.training;
+document.getElementById('date').value=m.date;
+editIndex=i;
+}
+
+function markPaid(i){
+members[i].date=new Date().toISOString().split('T')[0];
+localStorage.setItem('members', JSON.stringify(members));
+render();
+}
+
+function render(){
+let table=document.getElementById('table');
+let dueTable=document.getElementById('dueTable');
+let search=document.getElementById('search').value.toLowerCase();
+
+table.innerHTML='<tr><th>Name</th><th>Phone</th><th>Training</th><th>Last Paid</th><th>Actions</th></tr>';
+dueTable.innerHTML='<tr><th>Name</th><th>Phone</th></tr>';
+
+let today=new Date();
+let dueCount=0;
+
+members.forEach((m,i)=>{
+if(m.name.toLowerCase().includes(search)){
+let row=`<tr>
+<td>${m.name}</td>
+<td>${m.phone}</td>
+<td>${m.training}</td>
+<td>${m.date}</td>
+<td>
+<button onclick="editMember(${i})">Edit</button>
+<button onclick="deleteMember(${i})">Delete</button>
+<button onclick="markPaid(${i})">Paid</button>
+</td>
+</tr>`;
+table.innerHTML+=row;
+}
+
+let paidDate=new Date(m.date);
+let diff=(today-paidDate)/(1000*60*60*24);
+
+if(diff>30){
+dueCount++;
+let dueRow=`<tr><td>${m.name}</td><td>${m.phone}</td></tr>`;
+dueTable.innerHTML+=dueRow;
+}
+});
+
+document.getElementById('total').innerText=members.length;
+document.getElementById('active').innerText=members.length-dueCount;
+document.getElementById('dueCount').innerText=dueCount;
+}
+
+function clearForm(){
+document.getElementById('name').value='';
+document.getElementById('phone').value='';
+document.getElementById('date').value='';
+editIndex=-1;
+}
+
+render();
+</script>
+
+</body>
+</html>
